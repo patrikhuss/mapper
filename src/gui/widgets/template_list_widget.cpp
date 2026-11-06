@@ -93,6 +93,8 @@
 #include "templates/template_image.h"
 #include "templates/template_map.h"
 #include "templates/template_position_dock_widget.h"
+#include "templates/template_source.h"
+#include "templates/template_source_dialog.h"
 #include "templates/template_table_model.h"
 #include "templates/template_tool_move.h"
 #include <templates/template_track.h>
@@ -290,6 +292,8 @@ TemplateListWidget::TemplateListWidget(Map& map, MapView& main_view, MapEditorCo
 #else
 	vectorize_action = nullptr;
 #endif /* WITH_COVE */
+	edit_menu->addSeparator();
+	source_action = edit_menu->addAction(tr("Source and license..."), this, &TemplateListWidget::sourceClicked);
 
 	edit_button = createToolButton(QIcon(QString::fromLatin1(":/images/settings.png")),
 	                            ::OpenOrienteering::MapEditorController::tr("&Edit").remove(QLatin1Char('&')));
@@ -507,6 +511,7 @@ void TemplateListWidget::updateButtons()
 		import_action->setEnabled(import_enabled);
 		if (vectorize_action)
 			vectorize_action->setEnabled(vectorize_enabled);
+		source_action->setEnabled(bool(temp));
 	}
 	
 	// Not strictly related to buttons, but exactly the same triggers.
@@ -990,6 +995,20 @@ void TemplateListWidget::vectorizeClicked()
 	auto* templ = qobject_cast<TemplateImage*>(currentTemplate());
 	cr.run(controller.getWindow(), &map, templ);
 #endif /* WITH_COVE */
+}
+
+void TemplateListWidget::sourceClicked()
+{
+	auto* templ = currentTemplate();
+	if (!templ)
+		return;
+	
+	TemplateSourceDialog dialog(templ->getTemplateFilename(), templ->getTemplateSource(), this);
+	if (dialog.exec() == QDialog::Accepted && dialog.source() != templ->getTemplateSource())
+	{
+		templ->setTemplateSource(dialog.source());
+		map.emitTemplateChanged(templ);
+	}
 }
 
 void TemplateListWidget::moreActionClicked(QAction* action)

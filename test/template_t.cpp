@@ -69,6 +69,7 @@
 #include "gdal/gdal_manager.h"
 #include "templates/template.h"
 #include "templates/template_image.h"
+#include "templates/template_source.h"
 #include "templates/template_table_model.h"
 #include "templates/template_track.h"
 #include "templates/world_file.h"
@@ -303,6 +304,74 @@ private slots:
 		QCOMPARE(out_buffer.buffer(), original_data);
 	}
 	
+	void templateSourceTest()
+	{
+		QFile file{ QStringLiteral("testdata:templates/world-file.xmap") };
+		QVERIFY(file.open(QIODevice::ReadOnly));
+		auto original_data = file.readAll();
+		file.close();
+
+		Map map;
+		MapView view{ &map };
+		QBuffer buffer{ &original_data };
+		buffer.open(QIODevice::ReadOnly);
+		XMLFileImporter importer{ {}, &map, &view };
+		importer.setDevice(&buffer);
+		QVERIFY(importer.doImport());
+		QCOMPARE(map.getNumTemplates(), 1);
+		QVERIFY(map.getTemplate(0)->getTemplateSource().isEmpty());
+
+		TemplateSource source;
+		source.provider = QStringLiteral("Lantmäteriet");
+		source.title = QStringLiteral("Ortofoto <2025> & more");
+		source.captured = QStringLiteral("2025-07-01");
+		source.acquired = QStringLiteral("2026-11-06");
+		source.license = QStringLiteral("Terms \"A\"");
+		source.attribution = QStringLiteral("© Lantmäteriet");
+		source.permitted_use = QStringLiteral("Training maps\nPrint");
+		source.reference = QStringLiteral("Order 123");
+		source.url = QStringLiteral("https://example.com/?a=1&b=2");
+		source.notes = QStringLiteral("Line 1\nLine 2");
+		QVERIFY(!source.isEmpty());
+		QVERIFY(source.summary().contains(QStringLiteral("Lantmäteriet")));
+		map.getTemplate(0)->setTemplateSource(source);
+
+		// A duplicate has the same source.
+		std::unique_ptr<Template> duplicate{ map.getTemplate(0)->duplicate() };
+		QCOMPARE(duplicate->getTemplateSource(), source);
+
+		QBuffer out_buffer;
+		QVERIFY(out_buffer.open(QIODevice::WriteOnly));
+		XMLFileExporter exporter{ {}, &map, &view };
+		exporter.setOption(QStringLiteral("autoFormatting"), true);
+		exporter.setDevice(&out_buffer);
+		QVERIFY(exporter.doExport());
+		out_buffer.close();
+		QVERIFY(out_buffer.buffer().contains("<source provider="));
+
+		// The source survives saving and loading.
+		Map map2;
+		MapView view2{ &map2 };
+		QBuffer in_buffer{ &out_buffer.buffer() };
+		in_buffer.open(QIODevice::ReadOnly);
+		XMLFileImporter importer2{ {}, &map2, &view2 };
+		importer2.setDevice(&in_buffer);
+		QVERIFY(importer2.doImport());
+		QCOMPARE(map2.getNumTemplates(), 1);
+		QCOMPARE(map2.getTemplate(0)->getTemplateSource(), source);
+
+		// Removing the source restores the original data.
+		map2.getTemplate(0)->setTemplateSource({});
+		QBuffer out_buffer2;
+		QVERIFY(out_buffer2.open(QIODevice::WriteOnly));
+		XMLFileExporter exporter2{ {}, &map2, &view2 };
+		exporter2.setOption(QStringLiteral("autoFormatting"), true);
+		exporter2.setDevice(&out_buffer2);
+		QVERIFY(exporter2.doExport());
+		out_buffer2.close();
+		QCOMPARE(out_buffer2.buffer(), original_data);
+	}
+
 	void templateImageDrawableTest()
 	{
 		QVERIFY(!QImageWriter::supportedImageFormats().isEmpty());

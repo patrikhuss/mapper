@@ -243,6 +243,7 @@ Template::Template(const Template& proto)
 , template_file(proto.template_file)
 , template_path(proto.template_path)
 , template_relative_path(proto.template_relative_path)
+, template_source(proto.template_source)
 , template_state(proto.template_state)
 , error_string(proto.error_string)
 , has_unsaved_changes(proto.has_unsaved_changes)
@@ -324,6 +325,8 @@ void Template::saveTemplateConfiguration(QXmlStreamWriter& xml, bool open, const
 		
 		xml.writeEndElement(/*transformations*/);
 	}
+	
+	template_source.save(xml);
 	
 	saveTypeSpecificTemplateConfiguration(xml);
 	
@@ -419,6 +422,10 @@ Q_ASSERT(temp->passpoints.size() == 0);
 			{
 				temp->other_transform = temp->transform;
 			}
+		}
+		else if (xml.name() == QLatin1String("source"))
+		{
+			temp->template_source = TemplateSource::load(xml);
 		}
 		else if (!temp->loadTypeSpecificTemplateConfiguration(xml))
 		{

@@ -34,6 +34,7 @@
 #include <QStringRef>
 
 #include "core/map_coord.h"
+#include "templates/template_source.h"
 #include "util/matrix.h"
 #include "util/transformation.h"
 
@@ -552,6 +553,11 @@ public:
 	inline const QString& getTemplateRelativePath() const {return template_relative_path;}
 	inline void setTemplateRelativePath(const QString& value) {template_relative_path = value;}
 	
+	/// Returns information about the origin and terms of use of the template data.
+	inline const TemplateSource& getTemplateSource() const {return template_source;}
+	/// Sets information about the origin and terms of use of the template data.
+	inline void setTemplateSource(const TemplateSource& value) {template_source = value;}
+	
 	inline State getTemplateState() const {return template_state;}
 	inline void setTemplateState(State state) {template_state = state;}
 	
@@ -752,6 +758,9 @@ protected:
 	/// The template path relative to the map file (e.g. "../me/map.bmp").
 	/// Can be empty as long as the map file has not been saved yet.
 	QString template_relative_path;
+	
+	/// Origin and terms of use of the template data
+	TemplateSource template_source;
 	
 	/// The template lifetime state
 	State template_state = Configuring;

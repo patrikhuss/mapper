@@ -45,6 +45,12 @@ When a template is selected, it can be moved up and down in the list using the M
 
 Using the Delete or Close button, templates can be removed. The label text depends on the [corresponding setting](settings.md#templates-keep-settings-of-closed-templates) "Keep settings of closed templates": if it is activated, it will be "Close" and it will be possible to reopen the template later with the menu item Templates -&gt; Reopen template..., otherwise it will be "Delete" and it will not be possible to reopen the template later.
 
+#### Source and license  {#source}
+
+Templates are often based on data from others, e.g. orthophotos from a national mapping agency or an older map from another club. Such data comes with terms of use, may require an attribution, and becomes outdated over time. Via Edit -&gt; Source and license..., you can record for each template who provided the data, when it was captured and obtained, its license, what it may be used for, the required attribution text, and an order or agreement reference.
+
+This information is saved with the template in the map file (.omap and .xmap), so everyone who works on the map later knows where the data comes from and how it may be used. It is shown in the tooltip of the template in the template list.
+
 #### Positioning
 
 At the bottom of the window, there are the template positioning capabilities:

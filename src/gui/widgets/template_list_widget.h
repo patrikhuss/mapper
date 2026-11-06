@@ -135,6 +135,7 @@ protected:
 	void changeGeorefClicked();
 	void moreActionClicked(QAction* action);
 	void vectorizeClicked();
+	void sourceClicked();
 	
 	void templatePositionDockWidgetClosed(OpenOrienteering::Template* temp);
 	
@@ -162,6 +163,7 @@ private:
 	QAction* import_action;
 	QAction* georef_action;
 	QAction* vectorize_action;
+	QAction* source_action;
 	
 	// Buttons
 	QWidget* list_buttons_group;

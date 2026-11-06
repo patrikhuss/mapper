@@ -316,7 +316,9 @@ QVariant TemplateTableModel::templateData(Template* temp, const QModelIndex &ind
 			break;
 		Q_FALLTHROUGH();
 	case combined(nameColumn(), Qt::ToolTipRole):
-		return temp->getTemplatePath();
+		if (temp->getTemplateSource().isEmpty())
+			return temp->getTemplatePath();
+		return QString{temp->getTemplatePath() + QLatin1String("\n\n") + temp->getTemplateSource().summary()};
 	}
 	
 	if (role == Qt::UserRole)
