@@ -18,3 +18,5 @@ Vectorizing line features in raster graphics templates.
 [Geospatial data](gdal.md){: .subpage}
 Geospatial raster data and vector data support based on GDAL.
 
+[Official geodata as templates](official-geodata.md){: .subpage}
+Orthophotos, elevation models and laser data from mapping agencies.
