@@ -390,6 +390,25 @@ install(TARGETS Mapper
 )
 
 
+# Command line tool for comparing two versions of a map
+
+if(NOT ANDROID)
+	add_executable(mapper-diff
+	  map_diff/map_diff.cpp
+	  map_diff/map_diff.h
+	  map_diff/mapper_diff_main.cpp
+	)
+	target_link_libraries(mapper-diff
+	  Mapper_Common
+	)
+	target_compile_definitions(mapper-diff PRIVATE
+	  QT_NO_CAST_FROM_ASCII
+	  QT_NO_CAST_TO_ASCII
+	  QT_USE_QSTRINGBUILDER
+	)
+endif()
+
+
 # Java sources for Android
 # This target's sources will be build with the APK.
 
