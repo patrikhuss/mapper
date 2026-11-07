@@ -141,6 +141,7 @@
 #include "sensors/gps_track_recorder.h"
 #include "templates/paint_on_template_feature.h"
 #include "templates/template.h"
+#include "templates/template_collector.h"
 #include "templates/template_dialog_reopen.h"
 #include "templates/template_track.h"
 #include "tools/box_zoom_tool.h"
@@ -1043,6 +1044,7 @@ void MapEditorController::createActions()
 	//QAction* template_visibilities_window_act = newCheckAction("templatevisibilitieswindow", tr("Template visibilities window"), this, SLOT(showTemplateVisbilitiesWindow(bool)), "window-new", tr("Show/Hide the template visibilities window"));
 	open_template_act = newAction("opentemplate", tr("Open template..."), this, SLOT(openTemplateClicked()), nullptr, QString{}, "templates_menu.html");
 	reopen_template_act = newAction("reopentemplate", tr("Reopen template..."), this, SLOT(reopenTemplateClicked()), nullptr, QString{}, "templates_menu.html");
+	collect_templates_act = newAction("collecttemplates", tr("Collect templates into map folder..."), this, SLOT(collectTemplatesClicked()), nullptr, tr("Copy all template files into a folder next to the map file"), "templates_menu.html");
 	
 	tags_window_act = newCheckAction("tagswindow", tr("Tag editor"), this, SLOT(showTagsWindow(bool)), "tag-editor.png", tr("Show/Hide the tag editor window"), "tag_editor.html");
 	
@@ -1298,6 +1300,8 @@ void MapEditorController::createMenuAndToolbars()
 	template_menu->addSeparator();
 	template_menu->addAction(open_template_act);
 	template_menu->addAction(reopen_template_act);
+	template_menu->addSeparator();
+	template_menu->addAction(collect_templates_act);
 	
 	// Extend and activate general toolbar
 	QToolBar* main_toolbar = window->getGeneralToolBar();
@@ -2372,6 +2376,73 @@ void MapEditorController::reopenTemplateClicked()
 	dialog->setWindowModality(Qt::WindowModal);
 	dialog->exec();
 	delete dialog;
+}
+
+void MapEditorController::collectTemplatesClicked()
+{
+	auto const map_path = window->currentPath();
+	if (map_path.isEmpty())
+	{
+		QMessageBox::information(window, tr("Collect templates"),
+		                         tr("The map must be saved before its templates can be collected."));
+		return;
+	}
+	
+	TemplateCollector collector(*map, map_path);
+	auto const target = QDir::toNativeSeparators(collector.targetFolder());
+	
+	QStringList to_copy;
+	QStringList problems;
+	for (auto const& item : collector.items())
+	{
+		auto const name = item.temp->getTemplateFilename();
+		switch (item.status)
+		{
+		case TemplateCollector::Copy:
+		case TemplateCollector::Reuse:
+		case TemplateCollector::WriteOnSave:
+			to_copy.append(name);
+			break;
+		case TemplateCollector::Missing:
+			problems.append(tr("%1: file not found").arg(name));
+			break;
+		case TemplateCollector::Unsupported:
+			problems.append(tr("%1: refers to other files, please copy it manually").arg(name));
+			break;
+		case TemplateCollector::InMapFolder:
+		case TemplateCollector::Failed:
+			break;
+		}
+	}
+	
+	if (to_copy.isEmpty())
+	{
+		QString text = tr("All templates are already in the map's folder.");
+		if (!problems.isEmpty())
+			text = tr("No templates can be collected.") + QLatin1String("\n\n") + problems.join(QLatin1Char('\n'));
+		QMessageBox::information(window, tr("Collect templates"), text);
+		return;
+	}
+	
+	QString text = tr("The following template files will be copied to\n%1\nand the templates will use the copies:").arg(target)
+	            + QLatin1String("\n\n") + to_copy.join(QLatin1Char('\n'));
+	if (!problems.isEmpty())
+		text += QLatin1String("\n\n") + tr("Not collected:") + QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
+	if (QMessageBox::question(window, tr("Collect templates"), text, QMessageBox::Ok | QMessageBox::Cancel) != QMessageBox::Ok)
+		return;
+	
+	if (!collector.collect())
+	{
+		QStringList errors;
+		for (auto const& item : collector.items())
+		{
+			if (item.status == TemplateCollector::Failed)
+				errors.append(item.temp->getTemplateFilename() + QLatin1String(": ") + item.error);
+		}
+		QMessageBox::warning(window, tr("Collect templates"),
+		                     tr("Some templates could not be copied:") + QLatin1String("\n\n") + errors.join(QLatin1Char('\n')));
+	}
+	window->showStatusBarMessage(tr("Templates collected. Save the map to keep the new template locations."), 5000);
 }
 
 void MapEditorController::templateAvailabilityChanged()

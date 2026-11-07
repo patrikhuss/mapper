@@ -35,6 +35,7 @@
 #include <QFile>
 #include <QFileDevice>
 #include <QFileInfo>
+#include <QImage>
 #include <QImageWriter>
 #include <QIODevice>
 #include <QLineF>
@@ -68,6 +69,7 @@
 #include "gdal/ogr_template.h"
 #include "gdal/gdal_manager.h"
 #include "templates/template.h"
+#include "templates/template_collector.h"
 #include "templates/template_image.h"
 #include "templates/template_table_model.h"
 #include "templates/template_track.h"
@@ -301,6 +303,71 @@ private slots:
 		
 		// The exported data matches the original data.
 		QCOMPARE(out_buffer.buffer(), original_data);
+	}
+	
+	void collectTemplatesTest()
+	{
+		QTemporaryDir tmp_dir;
+		QVERIFY(tmp_dir.isValid());
+		QDir const root(tmp_dir.path());
+		QVERIFY(root.mkpath(QStringLiteral("map")));
+		QVERIFY(root.mkpath(QStringLiteral("data1")));
+		QVERIFY(root.mkpath(QStringLiteral("data2")));
+		
+		// data1: an image with a world file and GDAL auxiliary file
+		auto const image1 = root.absoluteFilePath(QStringLiteral("data1/world-file.png"));
+		QVERIFY(QFile::copy(QStringLiteral("testdata:templates/world-file.png"), image1));
+		QVERIFY(QFile::copy(QStringLiteral("testdata:templates/world-file.pgw"), root.absoluteFilePath(QStringLiteral("data1/world-file.pgw"))));
+		QFile aux(root.absoluteFilePath(QStringLiteral("data1/world-file.png.aux.xml")));
+		QVERIFY(aux.open(QIODevice::WriteOnly));
+		aux.write("<PAMDataset/>");
+		aux.close();
+		QFile unrelated(root.absoluteFilePath(QStringLiteral("data1/world-file.txt")));
+		QVERIFY(unrelated.open(QIODevice::WriteOnly));
+		unrelated.close();
+		
+		// data2: a different image with the same name
+		auto const image2 = root.absoluteFilePath(QStringLiteral("data2/world-file.png"));
+		QImage(4, 4, QImage::Format_RGB32).save(image2);
+		
+		auto const companions = TemplateCollector::companionFiles(image1);
+		QCOMPARE(companions.size(), 2);
+		
+		Map map;
+		map.addTemplate(map.getNumTemplates(), std::make_unique<TemplateImage>(image1, &map));
+		map.addTemplate(map.getNumTemplates(), std::make_unique<TemplateImage>(image2, &map));
+		map.addTemplate(map.getNumTemplates(), std::make_unique<TemplateImage>(image1, &map));  // same file again
+		map.addTemplate(map.getNumTemplates(), std::make_unique<TemplateImage>(root.absoluteFilePath(QStringLiteral("missing.png")), &map));
+		map.getTemplate(3)->setTemplateState(Template::Invalid);
+		
+		auto const map_path = root.absoluteFilePath(QStringLiteral("map/map.xmap"));
+		TemplateCollector collector(map, map_path);
+		QCOMPARE(collector.pendingCount(), 3);
+		auto const& items = collector.items();
+		QCOMPARE(int(items.size()), 4);
+		QCOMPARE(items[0].status, TemplateCollector::Copy);
+		QCOMPARE(items[1].status, TemplateCollector::Copy);
+		QCOMPARE(items[2].status, TemplateCollector::Reuse);
+		QCOMPARE(items[3].status, TemplateCollector::Missing);
+		QCOMPARE(QFileInfo(items[0].target_path).fileName(), QStringLiteral("world-file.png"));
+		QCOMPARE(QFileInfo(items[1].target_path).fileName(), QStringLiteral("world-file-2.png"));
+		QCOMPARE(items[2].target_path, items[0].target_path);
+		
+		QVERIFY(collector.collect());
+		QVERIFY(QFileInfo::exists(root.absoluteFilePath(QStringLiteral("map/templates/world-file.png"))));
+		QVERIFY(QFileInfo::exists(root.absoluteFilePath(QStringLiteral("map/templates/world-file.pgw"))));
+		QVERIFY(QFileInfo::exists(root.absoluteFilePath(QStringLiteral("map/templates/world-file.png.aux.xml"))));
+		QVERIFY(QFileInfo::exists(root.absoluteFilePath(QStringLiteral("map/templates/world-file-2.png"))));
+		QVERIFY(!QFileInfo::exists(root.absoluteFilePath(QStringLiteral("map/templates/world-file.txt"))));
+		QCOMPARE(map.getTemplate(0)->getTemplateRelativePath(), QStringLiteral("templates/world-file.png"));
+		QCOMPARE(map.getTemplate(1)->getTemplateRelativePath(), QStringLiteral("templates/world-file-2.png"));
+		QCOMPARE(map.getTemplate(2)->getTemplateRelativePath(), QStringLiteral("templates/world-file.png"));
+		QVERIFY(map.hasUnsavedChanges());
+		
+		// Collecting again does nothing.
+		TemplateCollector again(map, map_path);
+		QCOMPARE(again.pendingCount(), 0);
+		QCOMPARE(again.items()[0].status, TemplateCollector::InMapFolder);
 	}
 	
 	void templateImageDrawableTest()

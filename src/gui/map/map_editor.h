@@ -359,6 +359,7 @@ public slots:
 	void openTemplateClicked();
 	/** Shows the ReopenTemplateDialog. */
 	void reopenTemplateClicked();
+	void collectTemplatesClicked();
 	/** Adjusts action availability based on the presence of templates */
 	void templateAvailabilityChanged();
 	/** Adjusts action availability based on the presence of closed templates */
@@ -771,6 +772,7 @@ private:
 	TemplateListWidget* template_list_widget;
 	QAction* open_template_act = {};
 	QAction* reopen_template_act = {};
+	QAction* collect_templates_act = {};
 	
 	QAction* tags_window_act = {};
 	QPointer<EditorDockWidget> tags_dock_widget;
