@@ -110,6 +110,9 @@ However, it is possible to disable this special template type on the
 GDAL [settings](settings.md) page, so that GPX tracks will be handled as
 regular geospatial vector data via [GDAL](gdal.md).
 
+See [GPS tracks from watches and phones](gps-tracks.md) for how to get
+GPX files from devices and training services, and how to use them.
+
 ### Map templates
 
 This template type enables to load other map files as a template. This has two main purposes:

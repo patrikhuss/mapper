@@ -18,3 +18,5 @@ Vectorizing line features in raster graphics templates.
 [Geospatial data](gdal.md){: .subpage}
 Geospatial raster data and vector data support based on GDAL.
 
+[GPS tracks from watches and phones](gps-tracks.md){: .subpage}
+Getting GPX files from devices and services, combining tracks, drawing paths.
