@@ -68,6 +68,21 @@ struct TemplateSource
 
 	/// Reads a "source" element. The reader must be positioned at its start.
 	static TemplateSource load(QXmlStreamReader& xml);
+
+	/**
+	 * Detects source information which comes with a data file.
+	 *
+	 * If a file named like the data file plus ".source.json" exists, its
+	 * fields are used. Its keys are the names of the fields of this struct
+	 * (e.g. "provider", "captured", "permitted_use").
+	 *
+	 * Otherwise, metadata embedded in the file is used:
+	 * the copyright header of OpenStreetMap files, the metadata of GPX files
+	 * (e.g. from GPS watches), and TIFF tags of raster files read via GDAL.
+	 *
+	 * Returns an empty source if nothing is found.
+	 */
+	static TemplateSource detect(const QString& path);
 };
 
 bool operator==(const TemplateSource& lhs, const TemplateSource& rhs);

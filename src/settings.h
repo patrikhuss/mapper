@@ -61,6 +61,7 @@ public:
 		RectangleTool_HelperCrossRadiusMM,
 		RectangleTool_PreviewLineWidth,
 		Templates_KeepSettingsOfClosed,
+		Templates_AskForSource,
 		SymbolWidget_IconSizeMM,
 		SymbolWidget_ShowCustomIcons,
 		ActionGridBar_ButtonSizeMM,

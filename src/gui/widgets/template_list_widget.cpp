@@ -39,6 +39,8 @@
 #include <QDialog>
 #include <QDir>
 #include <QEvent>
+#include <QDate>
+#include <QDateTime>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -674,8 +676,34 @@ std::unique_ptr<Template> TemplateListWidget::showOpenTemplateDialog(QWidget* di
 		auto const error_template = tr("Cannot open template\n%1:\n%2");
 		QMessageBox::warning(dialog_parent, tr("Error"), error_template.arg(path, error));
 	}
+	else if (new_temp)
+	{
+		askForTemplateSource(dialog_parent, *new_temp, path);
+	}
 	
 	return new_temp;
+}
+
+
+void TemplateListWidget::askForTemplateSource(QWidget* dialog_parent, Template& temp, const QString& path)
+{
+	auto detected = TemplateSource::detect(path);
+	auto& settings = Settings::getInstance();
+	if (!settings.getSettingCached(Settings::Templates_AskForSource).toBool())
+	{
+		// Record what comes with the file, without asking.
+		if (!detected.isEmpty())
+			temp.setTemplateSource(detected);
+		return;
+	}
+	
+	if (detected.acquired.isEmpty())
+		detected.acquired = QFileInfo(path).lastModified().date().toString(Qt::ISODate);
+	TemplateSourceDialog dialog(temp.getTemplateFilename(), detected, dialog_parent, TemplateSourceDialog::Opening);
+	if (dialog.exec() == QDialog::Accepted)
+		temp.setTemplateSource(dialog.source());
+	if (dialog.dontAskAgain())
+		settings.setSetting(Settings::Templates_AskForSource, false);
 }
 
 

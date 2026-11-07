@@ -19,7 +19,9 @@
 
 #include "template_source_dialog.h"
 
+#include <QCheckBox>
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QFontMetrics>
 #include <QFormLayout>
 #include <QLabel>
@@ -53,15 +55,18 @@ QString trimmed(const QLineEdit* edit)
 
 
 
-TemplateSourceDialog::TemplateSourceDialog(const QString& template_name, const TemplateSource& source, QWidget* parent)
+TemplateSourceDialog::TemplateSourceDialog(const QString& template_name, const TemplateSource& source, QWidget* parent, Mode mode)
 : QDialog(parent)
 {
 	setWindowTitle(tr("Template source"));
 
 	auto* layout = new QFormLayout(this);
 
-	auto* intro = new QLabel(tr("Where does the data of <b>%1</b> come from, and how may it be used? "
-	                            "This information is saved in the map file.").arg(template_name.toHtmlEscaped()));
+	auto intro_text = tr("Where does the data of <b>%1</b> come from, and how may it be used? "
+	                     "This information is saved in the map file.").arg(template_name.toHtmlEscaped());
+	if (mode == Opening && !source.isEmpty())
+		intro_text += QLatin1String("<br><br>") + tr("Some fields were filled in from the file. Please check them.");
+	auto* intro = new QLabel(intro_text);
 	intro->setWordWrap(true);
 	layout->addRow(intro);
 
@@ -105,6 +110,14 @@ TemplateSourceDialog::TemplateSourceDialog(const QString& template_name, const T
 	layout->addRow(tr("Notes:"), notes_edit);
 
 	auto* button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	if (mode == Opening)
+	{
+		button_box->button(QDialogButtonBox::Cancel)->setText(tr("Skip"));
+		dont_ask_check = new QCheckBox(tr("Don't ask when opening templates"));
+		dont_ask_check->setToolTip(tr("Information found in template files is still recorded. "
+		                              "This can be changed in the settings."));
+		layout->addRow(dont_ask_check);
+	}
 	layout->addRow(button_box);
 	connect(button_box, &QDialogButtonBox::accepted, this, &QDialog::accept);
 	connect(button_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -114,6 +127,12 @@ TemplateSourceDialog::TemplateSourceDialog(const QString& template_name, const T
 
 
 TemplateSourceDialog::~TemplateSourceDialog() = default;
+
+
+bool TemplateSourceDialog::dontAskAgain() const
+{
+	return dont_ask_check && dont_ask_check->isChecked();
+}
 
 
 TemplateSource TemplateSourceDialog::source() const

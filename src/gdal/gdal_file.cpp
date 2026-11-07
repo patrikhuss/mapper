@@ -20,11 +20,13 @@
 #include "gdal_file.h"
 
 #include <cpl_conv.h>
+#include <cpl_error.h>
 #include <cpl_vsi.h>
 #include <gdal.h>
 
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 
 
 namespace OpenOrienteering {
@@ -67,6 +69,22 @@ QByteArray tryToFindRelativeTemplateFile(const QByteArray& template_path, const 
 		filepath.clear();
 	return filepath;
 }
+
+QStringList rasterMetadata(const QByteArray& filepath)
+{
+	QStringList result;
+	CPLPushErrorHandler(CPLQuietErrorHandler);
+	auto* dataset = GDALOpenEx(filepath.constData(), GDAL_OF_RASTER | GDAL_OF_READONLY, nullptr, nullptr, nullptr);
+	CPLPopErrorHandler();
+	if (dataset)
+	{
+		for (auto* item = GDALGetMetadata(dataset, nullptr); item && *item; ++item)
+			result.append(QString::fromUtf8(*item));
+		GDALClose(dataset);
+	}
+	return result;
+}
+
 
 }   // namespace GdalUtil
 

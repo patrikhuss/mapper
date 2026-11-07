@@ -26,6 +26,7 @@
 
 #include "templates/template_source.h"
 
+class QCheckBox;
 class QLineEdit;
 class QPlainTextEdit;
 class QWidget;
@@ -40,12 +41,23 @@ class TemplateSourceDialog : public QDialog
 {
 Q_OBJECT
 public:
-	TemplateSourceDialog(const QString& template_name, const TemplateSource& source, QWidget* parent = nullptr);
+	/// The situation in which the dialog is shown.
+	enum Mode
+	{
+		Edit,     ///< Editing the source of an existing template
+		Opening,  ///< Right after opening a template: may be skipped, or disabled
+	};
+
+	TemplateSourceDialog(const QString& template_name, const TemplateSource& source, QWidget* parent = nullptr, Mode mode = Edit);
 	~TemplateSourceDialog() override;
 
 	TemplateSource source() const;
 
+	/// In Opening mode, returns true if the user doesn't want to be asked again.
+	bool dontAskAgain() const;
+
 private:
+	QCheckBox* dont_ask_check = nullptr;
 	QLineEdit* provider_edit;
 	QLineEdit* title_edit;
 	QLineEdit* captured_edit;

@@ -51,6 +51,15 @@ Templates are often based on data from others, e.g. orthophotos from a national 
 
 This information is saved with the template in the map file (.omap and .xmap), so everyone who works on the map later knows where the data comes from and how it may be used. It is shown in the tooltip of the template in the template list.
 
+When a template is opened, Mapper asks for this information right away. Fields are filled in from information which comes with the file, where available:
+
+ - the copyright and license of OpenStreetMap data (.osm),
+ - the creator, author, name, date and copyright of GPX tracks, e.g. from GPS watches,
+ - copyright and date tags of raster images such as GeoTIFF files,
+ - a file named like the template file plus `.source.json`, e.g. `orthophoto.tif.source.json`. Its keys are `provider`, `title`, `captured`, `acquired`, `license`, `attribution`, `permitted_use`, `reference`, `url` and `notes`.
+
+The question can be skipped. It can be turned off in the dialog or in the [settings](settings.md) ("Templates: ask for source and license when opening"); information which comes with the file is then still recorded.
+
 #### Positioning
 
 At the bottom of the window, there are the template positioning capabilities:

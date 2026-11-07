@@ -61,6 +61,15 @@ class TemplateListWidget : public QWidget
 public:
 	static std::unique_ptr<Template> showOpenTemplateDialog(QWidget* dialog_parent, MapEditorController& controller);
 	
+	/**
+	 * Asks for the source of a newly opened template, pre-filled with
+	 * information found in the file (cf. TemplateSource::detect()).
+	 * 
+	 * When this is disabled in the settings, information found in the file
+	 * is recorded without asking.
+	 */
+	static void askForTemplateSource(QWidget* dialog_parent, Template& temp, const QString& path);
+	
 	~TemplateListWidget() override;
 	
 	TemplateListWidget(Map& map, MapView& main_view, MapEditorController& controller, QWidget* parent = nullptr);

@@ -372,6 +372,81 @@ private slots:
 		QCOMPARE(out_buffer2.buffer(), original_data);
 	}
 
+	void templateSourceDetectTest()
+	{
+		QTemporaryDir tmp_dir;
+		QVERIFY(tmp_dir.isValid());
+		auto const write = [&tmp_dir](const char* name, const char* content) {
+			auto const path = QDir(tmp_dir.path()).absoluteFilePath(QString::fromUtf8(name));
+			QFile file(path);
+			file.open(QIODevice::WriteOnly);
+			file.write(content);
+			return path;
+		};
+
+		// OpenStreetMap: header attributes
+		auto const osm = write("area.osm",
+		    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+		    "<osm version=\"0.6\" generator=\"openstreetmap-cgimap\" copyright=\"OpenStreetMap and contributors\""
+		    " attribution=\"http://www.openstreetmap.org/copyright\" license=\"http://opendatacommons.org/licenses/odbl/1-0/\">\n"
+		    " <bounds minlat=\"58.47\" minlon=\"16.30\" maxlat=\"58.50\" maxlon=\"16.37\"/>\n</osm>\n");
+		auto source = TemplateSource::detect(osm);
+		QCOMPARE(source.provider, QStringLiteral("OpenStreetMap contributors"));
+		QCOMPARE(source.license, QStringLiteral("ODbL 1.0"));
+		QCOMPARE(source.attribution, QStringLiteral("© OpenStreetMap contributors"));
+		QCOMPARE(source.url, QStringLiteral("http://www.openstreetmap.org/copyright"));
+
+		// GPX as exported by Garmin Connect: creator, metadata time, track name
+		auto const garmin = write("run.gpx",
+		    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+		    "<gpx creator=\"Garmin Connect\" version=\"1.1\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n"
+		    " <metadata><link href=\"connect.garmin.com\"><text>Garmin Connect</text></link>"
+		    "<time>2026-10-12T16:03:11.000Z</time></metadata>\n"
+		    " <trk><name>Kvällsrunda</name><type>running</type><trkseg>"
+		    "<trkpt lat=\"58.49\" lon=\"16.33\"><ele>30.2</ele><time>2026-10-12T16:03:11.000Z</time></trkpt>"
+		    "</trkseg></trk>\n</gpx>\n");
+		source = TemplateSource::detect(garmin);
+		QCOMPARE(source.provider, QStringLiteral("Garmin Connect"));
+		QCOMPARE(source.title, QStringLiteral("Kvällsrunda"));
+		QCOMPARE(source.captured, QStringLiteral("2026-10-12"));
+
+		// GPX with author, copyright and license
+		auto const gpx = write("track.gpx",
+		    "<?xml version=\"1.0\"?>\n"
+		    "<gpx creator=\"Some app\" version=\"1.1\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n"
+		    " <metadata><name>Survey</name><author><name>A. Mapper</name></author>"
+		    "<copyright author=\"Example Club\"><year>2026</year><license>CC BY 4.0</license></copyright></metadata>\n"
+		    " <trk><trkseg><trkpt lat=\"58.49\" lon=\"16.33\"><time>2026-05-01T08:00:00Z</time></trkpt></trkseg></trk>\n</gpx>\n");
+		source = TemplateSource::detect(gpx);
+		QCOMPARE(source.provider, QStringLiteral("A. Mapper"));
+		QCOMPARE(source.title, QStringLiteral("Survey"));
+		QCOMPARE(source.attribution, QStringLiteral("© Example Club"));
+		QCOMPARE(source.license, QStringLiteral("CC BY 4.0"));
+		QCOMPARE(source.captured, QStringLiteral("2026-05-01"));
+
+		// A sidecar file takes precedence over embedded metadata.
+		write("area.osm.source.json",
+		    "{ \"provider\": \"Club\", \"captured\": \"2025-07-01\", \"license\": \"Internal\","
+		    "  \"permitted_use\": [\"training\", \"print\"], \"unknown\": 1 }");
+		source = TemplateSource::detect(osm);
+		QCOMPARE(source.provider, QStringLiteral("Club"));
+		QCOMPARE(source.captured, QStringLiteral("2025-07-01"));
+		QCOMPARE(source.license, QStringLiteral("Internal"));
+		QCOMPARE(source.permitted_use, QStringLiteral("training, print"));
+		QVERIFY(source.attribution.isEmpty());
+
+		// Raster file with TIFF tags, read via GDAL
+		source = TemplateSource::detect(QFileInfo(QStringLiteral("testdata:templates/source-tags.tif")).absoluteFilePath());
+		QCOMPARE(source.provider, QStringLiteral("Example Agency"));
+		QCOMPARE(source.attribution, QStringLiteral("Example Agency"));
+		QCOMPARE(source.captured, QStringLiteral("2025-07-01"));
+		QCOMPARE(source.title, QStringLiteral("Orthophoto 2025"));
+
+		// Nothing to be found
+		QVERIFY(TemplateSource::detect(QFileInfo(QStringLiteral("testdata:templates/world-file.png")).absoluteFilePath()).isEmpty());
+		QVERIFY(TemplateSource::detect(QDir(tmp_dir.path()).absoluteFilePath(QStringLiteral("missing.gpx"))).isEmpty());
+	}
+
 	void templateImageDrawableTest()
 	{
 		QVERIFY(!QImageWriter::supportedImageFormats().isEmpty());

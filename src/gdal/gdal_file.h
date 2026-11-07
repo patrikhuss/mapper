@@ -21,6 +21,7 @@
 #define OPENORIENTEERING_GDAL_FILE_H
 
 class QByteArray;
+class QStringList;
 
 namespace OpenOrienteering {
 
@@ -62,6 +63,15 @@ bool mkdir(const QByteArray& filepath);
  * file relative to the map path, or an empty value otherwise.
  */
 QByteArray tryToFindRelativeTemplateFile(const QByteArray& template_path, const QByteArray& map_path);
+
+
+/**
+ * Returns the metadata of a raster data file, as "KEY=VALUE" strings
+ * (e.g. "TIFFTAG_COPYRIGHT=...").
+ * 
+ * Returns an empty list if the file cannot be opened as raster data.
+ */
+QStringList rasterMetadata(const QByteArray& filepath);
 
 
 }   // namespace GdalUtil

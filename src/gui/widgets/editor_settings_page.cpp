@@ -84,6 +84,9 @@ EditorSettingsPage::EditorSettingsPage(QWidget* parent)
 	keep_settings_of_closed_templates = new QCheckBox(tr("Templates: keep settings of closed templates"));
 	layout->addRow(keep_settings_of_closed_templates);
 	
+	ask_for_template_source = new QCheckBox(tr("Templates: ask for source and license when opening"));
+	layout->addRow(ask_for_template_source);
+	
 	ignore_touch_input = new QCheckBox(tr("User input: Ignore display touch"));
 	layout->addRow(ignore_touch_input);
 	
@@ -142,6 +145,7 @@ void EditorSettingsPage::apply()
 	setSetting(Settings::MapEditor_ZoomOutAwayFromCursor, zoom_out_away_from_cursor->isChecked());
 	setSetting(Settings::MapEditor_DrawLastPointOnRightClick, draw_last_point_on_right_click->isChecked());
 	setSetting(Settings::Templates_KeepSettingsOfClosed, keep_settings_of_closed_templates->isChecked());
+	setSetting(Settings::Templates_AskForSource, ask_for_template_source->isChecked());
 	setSetting(Settings::MapEditor_IgnoreTouchInput, ignore_touch_input->isChecked());
 	setSetting(Settings::EditTool_DeleteBezierPointAction, edit_tool_delete_bezier_point_action->currentData());
 	setSetting(Settings::EditTool_DeleteBezierPointActionAlternative, edit_tool_delete_bezier_point_action_alternative->currentData());
@@ -169,6 +173,7 @@ void EditorSettingsPage::updateWidgets()
 	zoom_out_away_from_cursor->setChecked(getSetting(Settings::MapEditor_ZoomOutAwayFromCursor).toBool());
 	draw_last_point_on_right_click->setChecked(getSetting(Settings::MapEditor_DrawLastPointOnRightClick).toBool());
 	keep_settings_of_closed_templates->setChecked(getSetting(Settings::Templates_KeepSettingsOfClosed).toBool());
+	ask_for_template_source->setChecked(getSetting(Settings::Templates_AskForSource).toBool());
 	ignore_touch_input->setChecked(getSetting(Settings::MapEditor_IgnoreTouchInput).toBool());
 	
 	edit_tool_delete_bezier_point_action->setCurrentIndex(edit_tool_delete_bezier_point_action->findData(getSetting(Settings::EditTool_DeleteBezierPointAction).toInt()));
